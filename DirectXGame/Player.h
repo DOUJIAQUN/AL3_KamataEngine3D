@@ -22,7 +22,7 @@ private:
 	struct CollisionMapInfo {
 		bool ceiling = false; // isTop
 		bool landing = false; // isGround
-		bool isWall = false;  // isWall
+		bool hitWall = false; // isWall
 		Vector3 move{};
 	};
 	// 角
@@ -54,7 +54,9 @@ private:
 	bool _isGround = true;
 	const float _kGravityAcceleration = 0.05f;
 	const float _kLimitFallSpeed = 0.5;
-	const float _kJumpAcceleration = 1.f;
+	const float _kJumpAcceleration = 1.0f;
+	const float _kLangingAcceleration = 0.05f;
+	const float _kWallAcceleration = 0.05f;
 
 public:
 	~Player();
@@ -72,5 +74,9 @@ private:
 
 	void MapCollision(CollisionMapInfo& info);
 	void MapCollision_Up(CollisionMapInfo& info);
+	void MapCollision_Down(CollisionMapInfo& info);
+	void MapCollision_Left(CollisionMapInfo& info);
+	void MapCollision_Right(CollisionMapInfo& info);
+	void MapCollision_isGroundChange(const CollisionMapInfo& info);
 	Vector3 CornerPosition(const Vector3& center, Corner corner);
 };
