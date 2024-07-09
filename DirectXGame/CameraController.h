@@ -1,38 +1,61 @@
 #pragma once
-#include "Player.h"
+#define NOMINMAX
 #include "ViewProjection.h"
-#include "WorldTransform.h"
 #include <algorithm>
 
-namespace CameraTools {
-// 矩形(Left,Right,Top,Bottom)
-struct Rect {
-	float left = 0;
-	float right = 1;
-	float top = 1;
-	float bottom = 0;
-};
-} // namespace CameraTools
+class Player;
 
-using namespace CameraTools;
 class CameraController {
-	// 基礎属性
-	ViewProjection _viewProjection;        // 自身の位置(カメラだから、ViewProjectionにしないと)
-	Vector3 _targetPos{};                  // 目標の位置
-	Vector3 _targetOffset = {0, 0, -50};   // カメラとターゲットの距離の差
-	Rect _movableArea;                     // カメラの移動範囲制限(L,R,T,B)
-	const float kInterpolationRate = 0.2f; // 座標補間
-	const float kVelocityRate = 10;        // 速度掛け率
-	Rect _targetArea = {0, 100, 100, 0};   // ターゲットはカメラ内に映すって範囲制限
-
-	Player* _target = nullptr;
-
 public:
-	void Initialize();
+	/// <summary>
+	/// カメラ移動範囲
+	/// </summary>
+	struct Rect {
+		float left = 0.0f;
+		float right = 1.0f;
+		float bottom = 0.0f;
+		float top = 1.0f;
+	} ;
+	/// <summary>
+	/// 初期化
+	/// </summary>
+	void Initalize(ViewProjection* viewProjection);
+	/// <summary>
+	/// 更新
+	/// </summary>
 	void Update();
-	void SetTarget(Player* target) { _target = target; };
+	/// <summary>
+	/// カメラの位置を更新
+	/// </summary>
+	/// <param name="target"></param>
+	void SetTarget(Player* target) { target_ = target; }
+	/// <summary>
+	/// 瞬間合わせ
+	/// </summary>
 	void Reset();
-	void SetMovableArea(Rect area) { _movableArea = area; };
+	/// <summary>
+	/// カメラ移動範囲 set
+	/// </summary>
+	/// <param name="area"></param>
+	void SetMoveableArea(Rect area) { moveableArea_ = area; }
 
-	const ViewProjection& GetViewProjection() { return _viewProjection; };
+private:
+	ViewProjection* viewProjection_ = nullptr;
+	//获取player对象
+	Player* target_ = nullptr;
+	// 追従対象とカメラの座標の差
+	Vector3 targetOffset_ = {0.0f, 0.0f, -30.0f};
+
+	//カメラ移動範囲
+	Rect moveableArea_ = {100, 100, 100, 100};
+
+	//座標補間
+	Vector3 endPosition;
+	static inline const float kInterpolationRate = 0.1f;
+
+	//速度加算 为了让镜头更快一点 看到后面的场景
+	static inline const float kVelocityBias = 15.0f;
+
+	//追従対象画面内
+	static inline const Rect margin = {-100, 100, -100, 100};
 };

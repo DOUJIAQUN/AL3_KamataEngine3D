@@ -1,16 +1,13 @@
 #include "Skydome.h"
 
-Skydome::~Skydome() { delete _model; }
-
-void Skydome::Initialize(ViewProjection* view) {
+void Skydome::Initialize(Model* model, ViewProjection* viewProjection) {
+	assert(model);
+	_model = model;
 	_worldTransform.Initialize();
-	_viewProjection = view;
-	_model = Model::CreateFromOBJ("Skydome", true);
-
-	_worldTransform.scale_ = {300, 300, 300};
-	_worldTransform.rotation_ = {0, 60 * acosf(-1) / 180.f, 0};
+	_viewProjection = viewProjection;
+	_worldTransform.scale_ = {500.0f, 500.0f, 500.0f};	//天球の大きさを設定　元のサイズは1、今回は500倍に
 }
 
-void Skydome::Update() { _worldTransform.UpdateMatrix(); }
+void Skydome::Update() { _worldTransform.UpdateMatrix(); }	//自作関数で天球の位置を更新
 
 void Skydome::Draw() { _model->Draw(_worldTransform, *_viewProjection); }

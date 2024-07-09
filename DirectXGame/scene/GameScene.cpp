@@ -1,145 +1,232 @@
 #include "GameScene.h"
+#include "AxisIndicator.h"   //軸方向を利用するため	想要使用轴方向必须导入
+#include "ImGuiManager.h"    //ImGuiを利用するため	想要使用ImGui必须导入
+#include "PrimitiveDrawer.h" //Lineを描画するため		想要画线必须导入
 #include "TextureManager.h"
-#include <cassert>
 
+// 构造函数
 GameScene::GameScene() {}
 
+// 析构函数
 GameScene::~GameScene() {
-	delete _model;
-	delete _debugCamera;
-	delete _skydomeObj;
-	delete _playerObj;
-	delete _enemyObj;
-	delete _cameraConObj;
-	// ブロックの容器の内容を一切クリアする
-	for (std::vector<WorldTransform*>& line : _worldTransformBlocks) {
-		for (WorldTransform* row : line) {
-			delete row;
+	//===================================================================
+
+	delete model_;
+
+	delete _modelSkydemo;
+
+	delete _modelPlayerOBJ;
+
+	delete _modelEnemyOBJ;
+
+	delete debugCamera_;
+
+	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
+		for (WorldTransform* worldTransformBlock : worldTransformBlockLine) {
+			delete worldTransformBlock;
 		}
 	}
-	_worldTransformBlocks.clear();
+	worldTransformBlocks_.clear();
+
 	delete _mapChipField;
+
+	delete _cameraController;
+	//===================================================================
 }
 
+// 初始化
 void GameScene::Initialize() {
 
 	dxCommon_ = DirectXCommon::GetInstance();
 	input_ = Input::GetInstance();
 	audio_ = Audio::GetInstance();
 
-	// MapChip
+	//===================================================================
+
+	isDebugCameraActive = false;
+
+	debugCamera_ = new DebugCamera(/*画面横幅*/ WinApp::kWindowWidth, /*画面縦幅*/ WinApp::kWindowHeight);
+
+	//====================Model=========================
+
+	model_ = Model::Create();
+
+	_modelSkydemo = Model::CreateFromOBJ("skydome", true); // 天球モデル
+
+	_modelPlayerOBJ = Model::CreateFromOBJ("playerOBJ", true); // player model
+
+	_modelEnemyOBJ = Model::CreateFromOBJ("enemyOBJ", true); // enemy model
+
+	//===================viewProjection_初始化===============================
+
+	viewProjection_.Initialize();
+
+	//====================天球==========================
+
+	_skydome = new Skydome();
+
+	_skydome->Initialize(_modelSkydemo, &viewProjection_);
+
+	//======================MapChip==========================
+
 	_mapChipField = new MapChipField();
-	_mapChipField->LoadMapChipCsv("Resources/MapChip/map_01.csv");
+	_mapChipField->LoadMapChipCsv("Resources/block.csv");
+
+	//======================Player=========================
+
+	_player = new Player();
+
+	Vector3 playerPosition = _mapChipField->GetMapChipPositionByIndex(1, 18);
+
+	_player->Initialize(_modelPlayerOBJ, &viewProjection_, playerPosition);
+
+	_player->SetMapChipField(_mapChipField);
+
+	//======================Enemy==============================
+
+	_enemy = new Enemy();
+
+	Vector3 enemyPosition = _mapChipField->GetMapChipPositionByIndex(10, 18);
+
+	_enemy->Initialize(_modelEnemyOBJ, &viewProjection_, enemyPosition);
+
+
+	//======================生成地图====================================
+
 	GenerateBlocks();
 
-	// Obj
-	_model = Model::Create();                                                    // TempModel
-	_viewProjection.Initialize();                                                // ViewProjection
-	_debugCamera = new DebugCamera(WinApp::kWindowWidth, WinApp::kWindowHeight); // DebugCamera
-	_skydomeObj = new Skydome();                                                 // SkyDome
-	_skydomeObj->Initialize(&_viewProjection);
+	//========================追踪相机========================================
 
-	_playerObj = new Player();                                           // Player
-	Vector3 playerPos = _mapChipField->GetMapChipPositionByIndex(1, 18); // Playerの最初位置を設定する
-	_playerObj->Initalize(&_viewProjection, playerPos);
-	_playerObj->SetMapChipField(_mapChipField);
+	_cameraController = new CameraController();
+	_cameraController->Initalize(&viewProjection_);
 
-	_enemyObj = new Enemy();                                             // Enemy
-	Vector3 enemyPos = _mapChipField->GetMapChipPositionByIndex(30, 18); // Enemyの最初位置を設定する
-	_enemyObj->Initalize(&_viewProjection, enemyPos);
+	//====================================================
+	// 设置相机的可移动区域
+	CameraController::Rect cameraArea;
+	// cameraArea.left = 10.0f;
+	// cameraArea.right = 188.0f;
+	// cameraArea.bottom = 5.0f;
+	// cameraArea.top = 100.0f;
 
-	_cameraConObj = new CameraController; // CameraControll
-	_cameraConObj->Initialize();
-	_cameraConObj->SetTarget(_playerObj); // 追従したいターゲット
-	_cameraConObj->Reset();               // 最初のカメラの位置を追従してるターゲットに設定していく
-	Vector3 mapMaxArea = _mapChipField->GetMapChipPositionByIndex(_mapChipField->kNumBlockHorizontal, 0);
-	CameraTools::Rect cameraArea = {35, mapMaxArea.x - 37, mapMaxArea.y - 19, 19};
-	_cameraConObj->SetMovableArea(cameraArea); // マップのサイズによってカメラの範囲を制限していく
+	cameraArea.left = 21.0f;
+	cameraArea.right = 200.0f;
+	cameraArea.bottom = 12.0f;
+	cameraArea.top = 40.0f;
+
+	// 设置相机的可移动区域
+	_cameraController->SetMoveableArea(cameraArea);
+	//====================================================
+
+	_cameraController->SetTarget(_player);
+	_cameraController->Reset();
+
+	//===================================================================
 }
 
+// Scene更新
 void GameScene::Update() {
+
+	//===================================================================
+
 #ifdef _DEBUG
 	if (input_->TriggerKey(DIK_SPACE)) {
-		_isDebugCameraActrive = !_isDebugCameraActrive;
+		isDebugCameraActive = !isDebugCameraActive;
 	}
-#endif
-	if (_isDebugCameraActrive) {
-		// _DebugCamera
-		_debugCamera->Update();
-		_viewProjection.matView = _debugCamera->GetViewProjection().matView;
-		_viewProjection.matProjection = _debugCamera->GetViewProjection().matProjection;
-		_viewProjection.TransferMatrix();
+	ImGui::Begin("Debug1");
+	ImGui::Text("Press Space To Change Camera");
+	ImGui::Text("isDebugCameraActive = %d", isDebugCameraActive);
+
+	ImGui::Text("enemy posX = %f",_enemy->GetWorldTransform().translation_.x);
+	ImGui::Text("enemy posY = %f",_enemy->GetWorldTransform().translation_.y);
+	ImGui::Text("enemy posZ = %f",_enemy->GetWorldTransform().translation_.z);
+
+	ImGui::End();
+#endif // _DEBUG
+
+	_skydome->Update();
+
+	if (isDebugCameraActive == true) {
+		debugCamera_->Update();
+		viewProjection_.matView = debugCamera_->GetViewProjection().matView;
+		viewProjection_.matProjection = debugCamera_->GetViewProjection().matProjection;
+		viewProjection_.TransferMatrix();
 	} else {
-		// CameraController
-		_cameraConObj->Update();
-		_viewProjection.matView = _cameraConObj->GetViewProjection().matView;
-		_viewProjection.matProjection = _cameraConObj->GetViewProjection().matProjection;
-		_viewProjection.TransferMatrix();
-		//_viewProjection.UpdateMatrix();
+		viewProjection_.UpdateMatrix();
 	}
 
-	// Block
-	for (std::vector<WorldTransform*>& line : _worldTransformBlocks) {
-		for (WorldTransform* row : line) {
-			if (!row)
+	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
+		for (WorldTransform* worldTransformBlock : worldTransformBlockLine) {
+			if (!worldTransformBlock)
 				continue;
-			row->UpdateMatrix();
+			worldTransformBlock->UpdateMatrix();
 		}
 	}
-	// Obj
-	_skydomeObj->Update();
-	_playerObj->Update();
-	_enemyObj->Update();
+
+	_player->Update();
+
+	_enemy->Update();
+
+	_cameraController->Update();
+	//===================================================================
 }
 
+// Scene描画
 void GameScene::Draw() {
 
-	// コマンドリストの取得
+	// コマンドリストの取得	获取命令列表
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
 
 #pragma region 背景スプライト描画
-	// 背景スプライト描画前処理
+	// 背景スプライト描画前処理	背景Sprite绘制预处理
 	Sprite::PreDraw(commandList);
 
 	/// <summary>
-	/// ここに背景スプライトの描画処理を追加できる
+	/// ここに背景スプライトの描画処理を追加できる	可以在这里下面追加背景Sprite的描绘处理
 	/// </summary>
 
-	// スプライト描画後処理
+	// スプライト描画後処理	Sprite绘制后处理
 	Sprite::PostDraw();
-	// 深度バッファクリア
+	// 深度バッファクリア		深度缓冲区清除
 	dxCommon_->ClearDepthBuffer();
 #pragma endregion
 
 #pragma region 3Dオブジェクト描画
-	// 3Dオブジェクト描画前処理
+	// 3Dオブジェクト描画前処理	三维对象绘制预处理
 	Model::PreDraw(commandList);
 
 	/// <summary>
-	/// ここに3Dオブジェクトの描画処理を追加できる
+	/// ここに3Dオブジェクトの描画処理を追加できる	可以在此处下面添加三维对象的绘制处理
 	/// </summary>
 
-	for (std::vector<WorldTransform*>& line : _worldTransformBlocks) {
-		for (WorldTransform* row : line) {
-			if (!row)
+	//===================================================================
+
+	_skydome->Draw();
+
+	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
+		for (WorldTransform* worldTransformBlock : worldTransformBlockLine) {
+			if (!worldTransformBlock)
 				continue;
-			_model->Draw(*row, _viewProjection);
+			model_->Draw(*worldTransformBlock, viewProjection_);
 		}
 	}
-	_skydomeObj->Draw();
-	_enemyObj->Draw();
-	_playerObj->Draw();
+
+	_player->Draw();
+
+	if (_enemy != nullptr)
+		_enemy->Draw();
+	//===================================================================
 
 	// 3Dオブジェクト描画後処理
 	Model::PostDraw();
+
 #pragma endregion
 
 #pragma region 前景スプライト描画
-	// 前景スプライト描画前処理
+	// 前景スプライト描画前処理	前景精灵绘制预处理
 	Sprite::PreDraw(commandList);
 
 	/// <summary>
-	/// ここに前景スプライトの描画処理を追加できる
+	/// ここに前景スプライトの描画処理を追加できる		可以在这里追加前景精灵的描绘处理
 	/// </summary>
 
 	// スプライト描画後処理
@@ -149,22 +236,21 @@ void GameScene::Draw() {
 }
 
 void GameScene::GenerateBlocks() {
-	// ブロックを初期化
-	const uint32_t kNumBlockHorizontal = MapChipField::kNumBlockHorizontal;
-	const uint32_t kNumBlockVertical = MapChipField::kNumBlockVirtical;
-	_worldTransformBlocks.resize(kNumBlockVertical); // 事前に要素数で容器のサイズを決める
-	for (uint32_t i = 0; i < kNumBlockVertical; i++) {
-		_worldTransformBlocks[i].resize(kNumBlockHorizontal);
+	uint32_t numBlockVirtical = _mapChipField->GetNumBlockVirtical();
+	uint32_t numBlockHorizontal = _mapChipField->GetNumBlockHorizontal();
+
+	worldTransformBlocks_.resize(numBlockVirtical);
+	for (uint32_t i = 0; i < numBlockVirtical; ++i) {
+		worldTransformBlocks_[i].resize(numBlockHorizontal);
 	}
-	// ブロック生成
-	for (uint32_t i = 0; i < kNumBlockVertical; i++) {
-		for (uint32_t j = 0; j < kNumBlockHorizontal; j++) {
-			switch (_mapChipField->GetMapChipTypeByIndex(j, i)) {
-			case MapChipType::kBlock:
-				_worldTransformBlocks[i][j] = new WorldTransform();
-				_worldTransformBlocks[i][j]->Initialize();
-				_worldTransformBlocks[i][j]->translation_ = _mapChipField->GetMapChipPositionByIndex(j, i);
-				break;
+
+	for (uint32_t i = 0; i < numBlockVirtical; ++i) {
+		for (uint32_t j = 0; j < numBlockHorizontal; ++j) {
+			if (_mapChipField->GetMapChipTypeByIndex(j, i) == MapChipType::kBlock) {
+				WorldTransform* worldTransform = new WorldTransform();
+				worldTransform->Initialize();
+				worldTransformBlocks_[i][j] = worldTransform;
+				worldTransformBlocks_[i][j]->translation_ = _mapChipField->GetMapChipPositionByIndex(j, i);
 			}
 		}
 	}

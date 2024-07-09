@@ -1,40 +1,35 @@
 #include "Enemy.h"
 
-Enemy::~Enemy() { delete _model; }
+void Enemy::Initialize(Model* model, ViewProjection* viewProjection, const Vector3& position) {
+	//===================常规初始化========================
+	assert(model);
+	model_ = model;
+	worldTransform_.Initialize();
+	worldTransform_.translation_ = position;
+	// 模型旋转二分之三Pi。调整转向
+	worldTransform_.rotation_.y = std::numbers::pi_v<float> * 3.0f / 2.0f;
+	viewProjection_ = viewProjection;
 
-void Enemy::Initalize(ViewProjection* viewProjection, const Vector3& position) {
-	_model = Model::CreateFromOBJ("Enemy", true);
-	_viewProjection = viewProjection;
-	_worldTransform.Initialize();
-	_worldTransform.translation_ = position;
-	_worldTransform.rotation_.y = 180 * acosf(-1) / 180;
+	//========================动画相关初始化==============================
 
-	_velocity.x = -kWalkSpeed;
-
-	_walkTime = 0;
-	_isAnimChange = false;
-	_worldTransform.rotation_.z = kWalkMotionAngleStart * acosf(-1) / 180;
+	walkTimer_ = 0.0f;
 }
 
 void Enemy::Update() {
-	// 回転アニメーション
-	if (_walkTime < kWalkMotionTime) {
-		_walkTime += 1 / 60.f;
-		if (_walkTime >= kWalkMotionTime) {
-			_walkTime = 0;
-			_isAnimChange = !_isAnimChange;
-		}
-	}
-	float startRadian = kWalkMotionAngleStart * acosf(-1) / 180;
-	float endRadian = kWalkMotionAngleEnd * acosf(-1) / 180;
-	if (!_isAnimChange)
-		_worldTransform.rotation_.z = std::lerp(startRadian, endRadian, _walkTime / kWalkMotionTime);
-	else
-		_worldTransform.rotation_.z = std::lerp(endRadian, startRadian, _walkTime / kWalkMotionTime);
-	//  移動
-	_worldTransform.translation_ += _velocity;
+	// Move
+	worldTransform_.translation_ += velocity_;
 
-	_worldTransform.UpdateMatrix(); // 行列計算
+	// 动画计时器更新
+	walkTimer_ += 1.0f / 60.0f;
+
+	// 正弦回转动画
+
+	float param = std::sin(std::numbers::pi_v<float> * 2.0f * walkTimer_);
+	float radian = kWalkMotionAngleStart + kWalkMotionAngleEnd * (param + 1.0f) / 2.0f;
+	worldTransform_.rotation_.z = std::sin(radian);
+
+	// 更新模型的位置
+	worldTransform_.UpdateMatrix();
 }
 
-void Enemy::Draw() { _model->Draw(_worldTransform, *_viewProjection); }
+void Enemy::Draw() { model_->Draw(worldTransform_, *viewProjection_); }

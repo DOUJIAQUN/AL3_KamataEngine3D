@@ -1,19 +1,19 @@
 #pragma once
 #include "Model.h"
-#include "ViewProjection.h"
 #include "WorldTransform.h"
+#include <cassert>
 /// <summary>
 /// 天球
 /// </summary>
 class Skydome {
-private:
-	WorldTransform _worldTransform;
-	ViewProjection* _viewProjection = nullptr;
-	Model* _model = nullptr;
-
 public:
-	~Skydome();
-	void Initialize(ViewProjection* view);
+	void Initialize(Model* model, ViewProjection* viewProjection);
 	void Update();
 	void Draw();
+
+private:
+	Model* _model = nullptr;
+	WorldTransform _worldTransform;
+	ViewProjection* _viewProjection = nullptr;
+
 };

@@ -1,27 +1,37 @@
 #pragma once
-#include "DebugText.h"
 #include "Model.h"
-#include "ViewProjection.h"
 #include "WorldTransform.h"
-#include <cmath>
+#include <cassert>
+#include <numbers>
+
 class Enemy {
+
 private:
-	WorldTransform _worldTransform;
-	ViewProjection* _viewProjection = nullptr;
-	Model* _model = nullptr;
+	//===================Move===================
 
-	static inline const float kWalkSpeed = 0.1f; // speed
-	Vector3 _velocity{};
+	static inline const float kWalkSpeed = 0.05f;
+	Vector3 velocity_ = {-kWalkSpeed, 0.0f, 0.0f};
 
-	static inline const float kWalkMotionAngleStart = -30; // 最初の角度「度」
-	static inline const float kWalkMotionAngleEnd = 30;    // 最後の角度「度」
-	static inline const float kWalkMotionTime = 1;         // アニメーションの周期「秒」
-	float _walkTime = 0;                                   // 経過時間
-	bool _isAnimChange = false;
+	//===================Animation===============
+
+	static inline const float kWalkMotionAngleStart = -1 * std::numbers::pi_v<float>; // 最初的角度
+	static inline const float kWalkMotionAngleEnd = 2 * std::numbers::pi_v<float>;    // 最后的角度
+	static inline const float kWalkMotionTime = 2.0f;                                 // 动画周期时间（秒）
+
+	float walkTimer_ = 0.0f; // 动画计时器经过时间
+
+	//===================Others===================
+
+	WorldTransform worldTransform_;
+	ViewProjection* viewProjection_ = nullptr;
+	Model* model_ = nullptr;
 
 public:
-	~Enemy();
-	void Initalize(ViewProjection* viewProjection, const Vector3& position);
+	void Initialize(Model* model, ViewProjection* viewProjection, const Vector3& position);
+
 	void Update();
+
 	void Draw();
+
+	WorldTransform& GetWorldTransform() { return worldTransform_; }
 };
