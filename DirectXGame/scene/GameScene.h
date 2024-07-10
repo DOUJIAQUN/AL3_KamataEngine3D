@@ -1,70 +1,109 @@
 #pragma once
 
 #include "Audio.h"
-#include "CameraController.h"
-#include "DebugCamera.h"
+#include "DebugCamera.h" //DebugCameraを利用するため	为了使用DebugCamera
 #include "DirectXCommon.h"
 #include "Input.h"
-#include "MapChipField.h"
 #include "Model.h"
-#include "Player.h"
-#include "Skydome.h"
 #include "Sprite.h"
 #include "ViewProjection.h"
 #include "WorldTransform.h"
 #include <vector>
+#include <cassert>
+#include "Skydome.h"
+#include "MapChipField.h"
+#include "Player.h"
+#include "Enemy.h"
+#include "CameraController.h"
+
+
+
 
 /// <summary>
-/// ゲームシーン
+/// ゲームシーン	GameScene
 /// </summary>
 class GameScene {
 
 public: // メンバ関数
 	/// <summary>
-	/// コンストクラタ
+	/// コンストクラタ	构造函数
 	/// </summary>
 	GameScene();
 
 	/// <summary>
-	/// デストラクタ
+	/// デストラクタ		析构函数
 	/// </summary>
 	~GameScene();
 
 	/// <summary>
-	/// 初期化
+	/// 初期化	初始化
 	/// </summary>
 	void Initialize();
 
 	/// <summary>
-	/// 毎フレーム処理
+	/// 毎フレーム処理	每帧处理
 	/// </summary>
 	void Update();
 
 	/// <summary>
-	/// 描画
+	/// 描画		描画
 	/// </summary>
 	void Draw();
 
-private: // メンバ変数
-	DirectXCommon* dxCommon_ = nullptr;
-	Input* input_ = nullptr;
-	Audio* audio_ = nullptr;
+	/// <summary>
+	/// 检查场景所有碰撞
+	/// </summary>
+	void CheckAllCollisions();
 
-	// 自分の変数
-	ViewProjection _viewProjection;
-	Model* _model = nullptr;
-	// Obj
-	bool _isDebugCameraActrive = false;
-	DebugCamera* _debugCamera = nullptr;       // DebugCamera
-	Skydome* _skydomeObj = nullptr;            // Skydome
-	Player* _playerObj = nullptr;              // Player
-	CameraController* _cameraConObj = nullptr; // CameraController
-	// Map
-	std::vector<std::vector<WorldTransform*>> _worldTransformBlocks;
+private: // メンバ変数	成员变量
+	DirectXCommon* dxCommon_ = nullptr;
+	Input* input_ = nullptr; // 输入
+	Audio* audio_ = nullptr; // 音频Audio
+
+	//===================================================================
+
+	bool isDebugCameraActive = false;
+
+	DebugCamera* debugCamera_ = nullptr;
+
+	Model* model_ = nullptr;
+
+	Model* _modelSkydemo = nullptr;
+
+	Model* _modelPlayerOBJ = nullptr;
+
+	Model* _modelEnemyOBJ = nullptr;
+
+	ViewProjection viewProjection_;
+
+	std::vector<std::vector<WorldTransform*>> worldTransformBlocks_;
+
+	//天球
+	Skydome* _skydome = nullptr;
+
+	//MapChip
 	MapChipField* _mapChipField = nullptr;
-	void GenerateBlocks(); // ブロック初期化と生成
+
+	//player
+	Player* _player = nullptr;
+
+	//enemy
+	//Enemy* _enemy = nullptr;
+	std::list<Enemy*> _enemies;//多个敌人
+	static inline const uint32_t enemyCount = 3;
+
+	//追踪camera
+	CameraController* _cameraController = nullptr;
 
 	/// <summary>
-	/// ゲームシーン用
+	/// create blocks
+	/// </summary>
+	void GenerateBlocks();
+
+
+	//===================================================================
+
+	/// <summary>
+	/// ゲームシーン用	GameScene用
 	/// </summary>
 };

@@ -5,6 +5,9 @@
 #include <d3d12.h>
 #include <type_traits>
 #include <wrl.h>
+#include "3DFunction.h"
+
+
 
 // 定数バッファ用データ構造体
 struct ConstBufferDataWorldTransform {
@@ -23,7 +26,7 @@ public:
 	// ローカル座標
 	Vector3 translation_ = {0, 0, 0};
 	// ローカル → ワールド変換行列
-	Matrix4x4 matWorld_{};
+	Matrix4x4 matWorld_;
 	// 親となるワールド変換へのポインタ
 	const WorldTransform* parent_ = nullptr;
 
@@ -34,6 +37,10 @@ public:
 	/// 初期化
 	/// </summary>
 	void Initialize();
+	/// <summary>
+	/// 行列の計算と転送
+	/// </summary>
+	void UpdateMatrix();
 	/// <summary>
 	/// 定数バッファ生成
 	/// </summary>
@@ -46,10 +53,6 @@ public:
 	/// 行列を転送する
 	/// </summary>
 	void TransferMatrix();
-	/// <summary>
-	/// 行列を計算・転送する
-	/// </summary>
-	void UpdateMatrix();
 	/// <summary>
 	/// 定数バッファの取得
 	/// </summary>

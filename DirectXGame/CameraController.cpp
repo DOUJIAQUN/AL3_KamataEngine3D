@@ -1,26 +1,40 @@
 #include "CameraController.h"
+#include "Player.h"
 
-void CameraController::Initialize() { _viewProjection.Initialize(); }
+void CameraController::Initalize(ViewProjection* viewProjection) { viewProjection_ = viewProjection; }
 
 void CameraController::Update() {
-	// 追従対象の位置を参照する
-	const WorldTransform& targetWorldTransform = _target->GetWorldTransform();
-	_targetPos = targetWorldTransform.translation_ + _targetOffset + (_target->GetVeloctiy() * kVelocityRate);
-	// 座標補完によりゆったり追従
-	_viewProjection.translation_.x = std::lerp(_viewProjection.translation_.x, _targetPos.x, kInterpolationRate);
-	_viewProjection.translation_.y = std::lerp(_viewProjection.translation_.y, _targetPos.y, kInterpolationRate);
-	_viewProjection.translation_.z = std::lerp(_viewProjection.translation_.z, _targetPos.z, kInterpolationRate);
-	// ターゲットはカメラ内に制限
-	_viewProjection.translation_.x = std::clamp(_viewProjection.translation_.x, _targetPos.x + _targetArea.left, _targetPos.x + _targetArea.right);
-	_viewProjection.translation_.y = std::clamp(_viewProjection.translation_.y, _targetPos.y + _targetArea.bottom, _targetPos.y + _targetArea.top);
-	// 移動範囲制限
-	_viewProjection.translation_.x = std::clamp(_viewProjection.translation_.x, _movableArea.left, _movableArea.right);
-	_viewProjection.translation_.y = std::clamp(_viewProjection.translation_.y, _movableArea.bottom, _movableArea.top);
-	// 更新する
-	_viewProjection.UpdateMatrix();
+	const WorldTransform& targetWorldTransform = target_->GetWorldTransform();
+	Vector3 targetVelocity = target_->GetVelocity();
+	endPosition = (targetWorldTransform.translation_ + targetOffset_) + (kVelocityBias * targetVelocity);
+
+	//===============================================================
+	// 调整镜头距离的东西
+	if (Input::GetInstance()->PushKey(DIK_W)) {
+		viewProjection_->translation_.z += 0.1f;
+	}
+	if (Input::GetInstance()->PushKey(DIK_S)) {
+		viewProjection_->translation_.z -= 0.1f;
+	}
+	//===============================================================
+	// 補間追従
+	viewProjection_->translation_.x = std::lerp(viewProjection_->translation_.x, endPosition.x, kInterpolationRate);
+	viewProjection_->translation_.y = std::lerp(viewProjection_->translation_.y, endPosition.y, kInterpolationRate);
+
+	//  追従対象画面外补正
+	viewProjection_->translation_.x = std::clamp(viewProjection_->translation_.x, targetWorldTransform.translation_.x + margin.left, targetWorldTransform.translation_.x + margin.right);
+	viewProjection_->translation_.y = std::clamp(viewProjection_->translation_.y, targetWorldTransform.translation_.y + margin.bottom, targetWorldTransform.translation_.y + margin.top);
+
+	// 限制移动范围
+	viewProjection_->translation_.x = std::clamp(viewProjection_->translation_.x, moveableArea_.left, moveableArea_.right);
+	viewProjection_->translation_.y = std::clamp(viewProjection_->translation_.y, moveableArea_.bottom, moveableArea_.top);
+
+	viewProjection_->UpdateMatrix();
 }
 
 void CameraController::Reset() {
-	const WorldTransform& targetWorldTransform = _target->GetWorldTransform();
-	_viewProjection.translation_ = targetWorldTransform.translation_ + _targetOffset;
+	// 追従対象のワールドトランスフォームを参照
+	const WorldTransform& targetWorldTransform = target_->GetWorldTransform();
+	// 追従対象とオフセットからカメラの座標を計算
+	viewProjection_->translation_ = Add(targetWorldTransform.translation_, targetOffset_);
 }

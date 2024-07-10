@@ -3,20 +3,29 @@
 /// <summary>
 /// 3次元ベクトル
 /// </summary>
-struct Vector3 final { // final:継承禁止
+struct Vector3 final {
 	float x;
 	float y;
 	float z;
-
-public:
-	Vector3& operator+=(const Vector3& other) {
-		this->x += other.x;
-		this->y += other.y;
-		this->z += other.z;
-		return *this;
-	}
-	Vector3 operator+(const Vector3 other) const { return Vector3{x + other.x, y + other.y, z + other.z}; }
-	Vector3 operator-(const Vector3 other) const { return Vector3{x - other.x, y - other.y, z - other.z}; }
-	Vector3 operator*(const Vector3 other) const { return Vector3{x * other.x, y * other.y, z * other.z}; }
-	Vector3 operator*(const float scalar) const { return Vector3{x * scalar, y * scalar, z * scalar}; }
 };
+
+//运算符重载
+inline Vector3 operator+(const Vector3& leftVector, const Vector3& rightVector) { return Vector3(leftVector.x + rightVector.x, leftVector.y + rightVector.y, leftVector.z + rightVector.z); }
+
+inline Vector3 operator-(const Vector3& leftVector, const Vector3& rightVector) { return Vector3(leftVector.x - rightVector.x, leftVector.y - rightVector.y, leftVector.z - rightVector.z); }
+
+inline Vector3& operator+=(Vector3& leftVector, const Vector3& rightVector) {
+	leftVector.x += rightVector.x;
+	leftVector.y += rightVector.y;
+	leftVector.z += rightVector.z;
+	return leftVector;
+}
+
+inline Vector3& operator-=(Vector3& leftVector, const Vector3& rightVector) {
+	leftVector.x -= rightVector.x;
+	leftVector.y -= rightVector.y;
+	leftVector.z -= rightVector.z;
+	return leftVector;
+}
+
+inline Vector3 operator*(float Scaler, const Vector3& v) { return Vector3(Scaler * v.x, Scaler * v.y, Scaler * v.z); }
