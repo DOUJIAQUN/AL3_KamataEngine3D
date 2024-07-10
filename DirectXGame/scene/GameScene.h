@@ -1,23 +1,21 @@
 #pragma once
 
 #include "Audio.h"
+#include "CameraController.h"
+#include "DeathParticles.h"
 #include "DebugCamera.h" //DebugCameraを利用するため	为了使用DebugCamera
 #include "DirectXCommon.h"
+#include "Enemy.h"
 #include "Input.h"
+#include "MapChipField.h"
 #include "Model.h"
+#include "Player.h"
+#include "Skydome.h"
 #include "Sprite.h"
 #include "ViewProjection.h"
 #include "WorldTransform.h"
-#include <vector>
 #include <cassert>
-#include "Skydome.h"
-#include "MapChipField.h"
-#include "Player.h"
-#include "Enemy.h"
-#include "CameraController.h"
-
-
-
+#include <vector>
 
 /// <summary>
 /// ゲームシーン	GameScene
@@ -50,6 +48,11 @@ public: // メンバ関数
 	/// </summary>
 	void Draw();
 
+	/// <summary>
+	/// 检查场景所有碰撞
+	/// </summary>
+	void CheckAllCollisions();
+
 private: // メンバ変数	成员变量
 	DirectXCommon* dxCommon_ = nullptr;
 	Input* input_ = nullptr; // 输入
@@ -69,30 +72,36 @@ private: // メンバ変数	成员变量
 
 	Model* _modelEnemyOBJ = nullptr;
 
+	Model* _modelParticleOBJ = nullptr;
+
 	ViewProjection viewProjection_;
 
 	std::vector<std::vector<WorldTransform*>> worldTransformBlocks_;
 
-	//天球
+	// 天球
 	Skydome* _skydome = nullptr;
 
-	//MapChip
+	// MapChip
 	MapChipField* _mapChipField = nullptr;
 
-	//player
+	// player
 	Player* _player = nullptr;
 
-	//enemy
-	Enemy* _enemy = nullptr;
+	// enemy
+	// Enemy* _enemy = nullptr;
+	std::list<Enemy*> _enemies; // 多个敌人
+	static inline const uint32_t enemyCount = 3;
 
-	//追踪camera
+	// 粒子
+	DeathParticles* deathParticles_ = nullptr;
+
+	// 追踪camera
 	CameraController* _cameraController = nullptr;
 
 	/// <summary>
 	/// create blocks
 	/// </summary>
 	void GenerateBlocks();
-
 
 	//===================================================================
 
