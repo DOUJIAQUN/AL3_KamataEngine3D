@@ -54,6 +54,9 @@ void GameScene::Initialize() {
 	input_ = Input::GetInstance();
 	audio_ = Audio::GetInstance();
 
+	//=================phase======================
+	phase_ = Phase::kPlay;
+
 	//===================================================================
 
 	isDebugCameraActive = false;
@@ -93,7 +96,7 @@ void GameScene::Initialize() {
 
 	Vector3 playerPosition = _mapChipField->GetMapChipPositionByIndex(2, 18);
 
-	_player->Initialize(_modelPlayerOBJ, &viewProjection_, playerPosition);
+	_player->Initialize(_modelPlayerOBJ, &viewProjection_, playerPosition, this);
 
 	_player->SetMapChipField(_mapChipField);
 
@@ -119,7 +122,7 @@ void GameScene::Initialize() {
 
 	deathParticles_ = new DeathParticles();
 
-	deathParticles_->Initialize(_modelParticleOBJ, &viewProjection_, playerPosition);
+	// deathParticles_->Initialize(_modelParticleOBJ, &viewProjection_, playerPosition);
 
 	//======================生成地图====================================
 
@@ -133,10 +136,6 @@ void GameScene::Initialize() {
 	//====================================================
 	// 设置相机的可移动区域
 	CameraController::Rect cameraArea;
-	// cameraArea.left = 10.0f;
-	// cameraArea.right = 188.0f;
-	// cameraArea.bottom = 5.0f;
-	// cameraArea.top = 100.0f;
 
 	cameraArea.left = 21.0f;
 	cameraArea.right = 200.0f;
@@ -165,54 +164,26 @@ void GameScene::Update() {
 	ImGui::Begin("Debug1");
 	ImGui::Text("Press Space To Change Camera");
 	ImGui::Text("isDebugCameraActive = %d", isDebugCameraActive);
+	ImGui::Text("onGround = %d", _player->IsOnGround());
+
+	ImGui::Text("isdead = %d", IsDead());
 
 	ImGui::End();
 #endif // _DEBUG
 
-	//=======================天球更新================
-	_skydome->Update();
+	//=======================phase更新================
+	ChangePhase();
 
 	//=============================================
-	if (isDebugCameraActive == true) {
-		debugCamera_->Update();
-		viewProjection_.matView = debugCamera_->GetViewProjection().matView;
-		viewProjection_.matProjection = debugCamera_->GetViewProjection().matProjection;
-		viewProjection_.TransferMatrix();
-	} else {
-		viewProjection_.UpdateMatrix();
-	}
+	// if (isDebugCameraActive == true) {
+	//	debugCamera_->Update();
+	//	viewProjection_.matView = debugCamera_->GetViewProjection().matView;
+	//	viewProjection_.matProjection = debugCamera_->GetViewProjection().matProjection;
+	//	viewProjection_.TransferMatrix();
+	//} else {
+	//	viewProjection_.UpdateMatrix();
+	//}
 
-	//=======================地图块更新================
-	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
-		for (WorldTransform* worldTransformBlock : worldTransformBlockLine) {
-			if (!worldTransformBlock)
-				continue;
-			worldTransformBlock->UpdateMatrix();
-		}
-	}
-
-	//=======================Player更新================
-	_player->Update();
-
-	//=======================Enemy更新================
-	//_enemy->Update();
-
-	for (Enemy* enemy : _enemies) {
-		enemy->Update();
-	}
-
-	//=======================粒子更新================
-
-	if (deathParticles_ != nullptr) {
-		deathParticles_->Update();
-	}
-
-	//=======================碰撞更新================
-	// all collisions check
-	CheckAllCollisions();
-
-	//=======================追踪相机更新================
-	_cameraController->Update();
 	//===================================================================
 }
 
@@ -259,7 +230,9 @@ void GameScene::Draw() {
 	}
 
 	//=======================Player描画================
-	_player->Draw();
+	if (!isDead_) {
+		_player->Draw();
+	}
 
 	//=======================Enemy描画================
 
@@ -334,5 +307,66 @@ void GameScene::GenerateBlocks() {
 				worldTransformBlocks_[i][j]->translation_ = _mapChipField->GetMapChipPositionByIndex(j, i);
 			}
 		}
+	}
+}
+
+void GameScene::ChangePhase() {
+	//=======================天球更新================
+	_skydome->Update();
+
+	//=======================地图块更新================
+	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
+		for (WorldTransform* worldTransformBlock : worldTransformBlockLine) {
+			if (!worldTransformBlock)
+				continue;
+			worldTransformBlock->UpdateMatrix();
+		}
+	}
+
+	//=======================Enemy更新================
+	//_enemy->Update();
+
+	for (Enemy* enemy : _enemies) {
+		enemy->Update();
+	}
+
+	//=======================追踪相机更新================
+	_cameraController->Update();
+
+	//===========================阶段=============================
+
+	switch (phase_) {
+
+		// 游玩状态
+	case Phase::kPlay:
+		//=======================Player更新================
+		_player->Update();
+
+		//=======================碰撞更新================
+		// all collisions check
+		CheckAllCollisions();
+
+		//=======================死亡判定================
+		if (isDead_) {
+			const Vector3& deathPosition = _player->GetWorldTransform().translation_;
+			deathParticles_->Initialize(_modelParticleOBJ, &viewProjection_, deathPosition);
+			phase_ = Phase::kDeath;
+		}
+		break;
+
+		// 玩家死亡
+	case Phase::kDeath:
+
+		//=======================粒子更新================
+
+		if (deathParticles_ != nullptr) {
+			deathParticles_->Update();
+		}
+
+		if (deathParticles_ && deathParticles_->IsFinished()) {
+			finished_ = true;
+		}
+
+		break;
 	}
 }

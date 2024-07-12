@@ -1,10 +1,11 @@
 #include "Player.h"
+#include "GameScene.h"
 
 Player::Player() {}
 
 Player::~Player() {}
 
-void Player::Initialize(Model* model, ViewProjection* viewProjection, const Vector3& position) {
+void Player::Initialize(Model* model, ViewProjection* viewProjection, const Vector3& position, GameScene* gameScene) {
 	assert(model);
 	model_ = model;
 	worldTransform_.Initialize();
@@ -12,6 +13,7 @@ void Player::Initialize(Model* model, ViewProjection* viewProjection, const Vect
 	// 模型旋转二分之Pi。 但是我自己做的模型朝向是向左，所以不需要旋转
 	// worldTransform_.rotation_.y = std::numbers::pi_v<float> / 2.0f;
 	viewProjection_ = viewProjection;
+	gameScene_ = gameScene;
 }
 
 void Player::Update() {
@@ -42,8 +44,10 @@ void Player::Update() {
 /// </summary>
 void Player::Move() {
 
-	velocity_ = Add(velocity_, {0.0f, -kGravityAcceleration, 0.0f});
-	velocity_.y = std::max(velocity_.y, -kLimitFallSpeed);
+	// if (!onGround_) {
+	//	velocity_ = Add(velocity_, {0.0f, -kGravityAcceleration, 0.0f});
+	//	velocity_.y = std::max(velocity_.y, -kLimitFallSpeed);
+	// }
 
 	// 移动
 	if (Input::GetInstance()->PushKey(DIK_RIGHT) || Input::GetInstance()->PushKey(DIK_LEFT)) {
@@ -143,7 +147,9 @@ AABB Player::GetAABB() {
 
 void Player::OnCollision(const Enemy* enemy) {
 	(void)enemy;
-	velocity_ += Vector3(0, 2.0f, 0);
+	// velocity_ += Vector3(0, 2.0f, 0);
+
+	gameScene_->SetIsDead(true);
 }
 
 #pragma region 玩家和地图块的碰撞
@@ -217,7 +223,7 @@ void Player::IsMapChipUPCollision(CollisionMapInfo& info) {
 }
 
 void Player::IsMapChipDownCollision(CollisionMapInfo& info) {
-	// 下降？
+	// if player up return
 	if (info.move.y >= 0) {
 		return;
 	}
@@ -256,6 +262,9 @@ void Player::IsMapChipDownCollision(CollisionMapInfo& info) {
 
 		info.move.y = std::min(0.0f, moveY);
 		info.landing = true;
+
+	} else {
+		info.landing = false;
 	}
 }
 
@@ -292,7 +301,7 @@ void Player::IsMapChipRightCollision(CollisionMapInfo& info) {
 		indexSet = mapChipField_->GetMapChipIndexSetByPosition((worldTransform_.translation_ + info.move) + offset);
 		MapChipField::Rect rect = mapChipField_->GetRectByIndexSet(indexSet.xIndex, indexSet.yIndex);
 
-		float moveX = rect.left - worldTransform_.translation_.x - kWidth / 2 + kBlank;
+		float moveX = rect.left - worldTransform_.translation_.x - kWidth / 2 - kBlank;
 		info.move.x = std::max(0.0f, moveX);
 		info.hitWall = true;
 	}
@@ -343,6 +352,9 @@ void Player::CeilingCollision(Player::CollisionMapInfo& info) {
 	if (info.ceiling) {
 		velocity_.y = 0.0f;
 	}
+	if (info.landing) {
+		velocity_.y = 0.0f;
+	}
 }
 
 void Player::WallCollision(Player::CollisionMapInfo& info) {
@@ -352,20 +364,22 @@ void Player::WallCollision(Player::CollisionMapInfo& info) {
 }
 
 void Player::LandingSwitch(CollisionMapInfo& info) {
+	velocity_ = Add(velocity_, {0.0f, -kGravityAcceleration, 0.0f});
+	velocity_.y = std::max(velocity_.y, -kLimitFallSpeed);
+
 	if (onGround_) {
 		if (velocity_.y > 0.0f) {
 			onGround_ = false;
-		} else {
+		} else /*if (!info.landing)*/ {
 			// 移动后四角坐标计算
 			std::array<Vector3, kNumCorners> positionsNew;
 			for (uint32_t i = 0; i < positionsNew.size(); ++i) {
 				positionsNew[i] = CornerPosition(Add(worldTransform_.translation_, info.move), static_cast<Corner>(i));
 			}
 
-			// 上升？
-			if (info.move.y <= 0) {
-				return;
-			}
+			// if (info.move.y <= 0) {
+			// return;
+			//}
 
 			// 下落判定和切换
 			MapChipType mapChipType;
@@ -373,13 +387,13 @@ void Player::LandingSwitch(CollisionMapInfo& info) {
 			MapChipField::IndexSet indexSet;
 
 			// 左下
-			indexSet = mapChipField_->GetMapChipIndexSetByPosition(positionsNew[kLeftBottom]);
+			indexSet = mapChipField_->GetMapChipIndexSetByPosition(positionsNew[kLeftBottom] - Vector3{0, kBlank, 0});
 			mapChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
 			if (mapChipType == MapChipType::kBlock) {
 				hit = true;
 			}
 			// 右下
-			indexSet = mapChipField_->GetMapChipIndexSetByPosition(positionsNew[kRightBottom]);
+			indexSet = mapChipField_->GetMapChipIndexSetByPosition(positionsNew[kRightBottom] - Vector3{0, kBlank, 0});
 			mapChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
 			if (mapChipType == MapChipType::kBlock) {
 				hit = true;
