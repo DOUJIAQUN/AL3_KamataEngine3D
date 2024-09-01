@@ -10,10 +10,10 @@ void CameraController::Update() {
 
 	//===============================================================
 	// 调整镜头距离的东西
-	if (Input::GetInstance()->PushKey(DIK_W)) {
+	if (Input::GetInstance()->PushKey(DIK_UP)) {
 		viewProjection_->translation_.z += 0.1f;
 	}
-	if (Input::GetInstance()->PushKey(DIK_S)) {
+	if (Input::GetInstance()->PushKey(DIK_DOWN)) {
 		viewProjection_->translation_.z -= 0.1f;
 	}
 	//===============================================================

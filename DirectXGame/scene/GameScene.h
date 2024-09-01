@@ -52,7 +52,7 @@ public: // メンバ関数
 	/// 检查场景所有碰撞
 	/// </summary>
 	void CheckAllCollisions();
-
+	void CheckGameClear();
 	/// <summary>
 	/// 切换阶段
 	/// </summary>
@@ -70,6 +70,9 @@ public: // メンバ関数
 	}
 
 	bool IsFinished() const { return finished_; }
+	bool IsVictory() const { return victory_; }
+
+	AABB GetAABB();
 
 private: // メンバ変数	成员变量
 	DirectXCommon* dxCommon_ = nullptr;
@@ -77,11 +80,16 @@ private: // メンバ変数	成员变量
 	Audio* audio_ = nullptr; // 音频Audio
 	//========================scene切换参数============================
 	bool finished_ = false;
+	bool victory_ = false;
 	//========================phase切换参数============================
 	// flag
 	bool isDead_ = false;
-
+	bool isClear_ = false;
 	//===================================================================
+
+	// character 当たり判定 size （可能要调整）
+	static inline const float kWidth = 1.99f;
+	static inline const float kHeight = 1.99f;
 
 	bool isDebugCameraActive = false;
 
@@ -97,15 +105,22 @@ private: // メンバ変数	成员变量
 
 	Model* _modelParticleOBJ = nullptr;
 
+	Model* _modelGoal = nullptr;
+
+	WorldTransform goalWorldTransform_;
 	ViewProjection viewProjection_;
 
 	std::vector<std::vector<WorldTransform*>> worldTransformBlocks_;
 
+	
 	// 天球
 	Skydome* _skydome = nullptr;
 
 	// MapChip
 	MapChipField* _mapChipField = nullptr;
+	Vector3 goalPosition_;     // 通关目标点
+	float goalRadius_ = 1.0f;  // 目标区域的半径，允许玩家接近该区域
+	
 
 	// player
 	Player* _player = nullptr;
@@ -113,7 +128,7 @@ private: // メンバ変数	成员变量
 	// enemy
 	// Enemy* _enemy = nullptr;
 	std::list<Enemy*> _enemies; // 多个敌人
-	static inline const uint32_t enemyCount = 3;
+	static inline const uint32_t enemyCount = 9;
 
 	// 粒子
 	DeathParticles* deathParticles_ = nullptr;

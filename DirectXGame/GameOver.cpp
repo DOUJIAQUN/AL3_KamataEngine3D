@@ -1,26 +1,19 @@
-#include "TitleScene.h"
+#include "GameOver.h"
 #include "TextureManager.h"
 
-TitleScene::TitleScene() {}
+GameOver::GameOver() {}
 
-TitleScene::~TitleScene() {
-	//delete _modelSkydemo;
-	delete gametitleSprite_;
+GameOver::~GameOver() {
+	delete _modelSkydemo;
+	delete gameOverSprite_;
 }
 
-void TitleScene::Initialize() {
+void GameOver::Initialize() {
 
 	dxCommon_ = DirectXCommon::GetInstance();
 
 	viewProjection_.Initialize();
-
-	gametitletextureHandle_ = TextureManager::Load("title.png");
-
-	gametitleSprite_ = Sprite::Create(gametitletextureHandle_, {0, 0});
-
-
 	
-
 	//====================天球==========================
 	_modelSkydemo = Model::CreateFromOBJ("skydome", true); // 天球モデル
 
@@ -28,27 +21,32 @@ void TitleScene::Initialize() {
 
 	_skydome->Initialize(_modelSkydemo, &viewProjection_);
 
+
+	gameOvertextureHandle_ = TextureManager::Load("gameover.png");
+
 	
+	gameOverSprite_ = Sprite::Create(gameOvertextureHandle_, {0, 0});
+
 }
 
-void TitleScene::Update() {
+void GameOver::Update() {
 	_skydome->Update();
-	if (Input::GetInstance()->PushKey(DIK_SPACE)) {
+	if (Input::GetInstance()->PushKey(DIK_B)) {
 		finished_ = true;
 	}
 }
 
-void TitleScene::Draw() {
+void GameOver::Draw() {
 	// コマンドリストの取得	获取命令列表
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
+
 	Model::PreDraw(commandList);
 	_skydome->Draw();
 	Model::PostDraw();
 
 	Sprite::PreDraw(commandList);
-	gametitleSprite_->Draw();
+	gameOverSprite_->Draw();
 	Sprite::PostDraw();
-
 	
 	
 }

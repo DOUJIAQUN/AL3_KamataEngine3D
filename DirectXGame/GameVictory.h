@@ -2,21 +2,20 @@
 #include "DirectXCommon.h"
 #include "Input.h"
 #include "Model.h"
+#include "Player.h"
 #include "ViewProjection.h"
 #include "WorldTransform.h"
-#include "Player.h"
 #include "Skydome.h"
 
-class TitleScene {
+class GameVictory {
 private:
 	bool finished_ = false;
 
+	uint32_t gameVictorytextureHandle_ = 0;
+
+	Sprite* gameVictorySprite_ = nullptr;
+
 	DirectXCommon* dxCommon_ = nullptr;
-
-
-	uint32_t gametitletextureHandle_ = 0;
-
-	Sprite* gametitleSprite_ = nullptr;
 
 
 	ViewProjection viewProjection_;
@@ -26,11 +25,11 @@ private:
 
 	Model* _modelSkydemo = nullptr;
 
-	
+	Player* player_ = nullptr;
 
 public:
-	TitleScene();
-	~TitleScene();
+	GameVictory();
+	~GameVictory();
 	void Initialize();
 	void Update();
 	void Draw();

@@ -11,7 +11,7 @@ void Player::Initialize(Model* model, ViewProjection* viewProjection, const Vect
 	worldTransform_.Initialize();
 	worldTransform_.translation_ = position;
 	// 模型旋转二分之Pi。 但是我自己做的模型朝向是向左，所以不需要旋转
-	// worldTransform_.rotation_.y = std::numbers::pi_v<float> / 2.0f;
+	worldTransform_.rotation_.y = std::numbers::pi_v<float> / 2.0f;
 	viewProjection_ = viewProjection;
 	gameScene_ = gameScene;
 }
@@ -50,9 +50,9 @@ void Player::Move() {
 	// }
 
 	// 移动
-	if (Input::GetInstance()->PushKey(DIK_RIGHT) || Input::GetInstance()->PushKey(DIK_LEFT)) {
+	if (Input::GetInstance()->PushKey(DIK_D) || Input::GetInstance()->PushKey(DIK_A)) {
 		Vector3 acceleration = {};
-		if (Input::GetInstance()->PushKey(DIK_RIGHT)) {
+		if (Input::GetInstance()->PushKey(DIK_D)) {
 			// 旋转
 			if (lrDirection_ != LRDirection::kRight) {
 				lrDirection_ = LRDirection::kRight;
@@ -64,7 +64,7 @@ void Player::Move() {
 				velocity_.x *= (1.0f - kAttenuation);
 			}
 			acceleration.x += kAcceleration;
-		} else if (Input::GetInstance()->PushKey(DIK_LEFT)) {
+		} else if (Input::GetInstance()->PushKey(DIK_A)) {
 			// 旋转
 			if (lrDirection_ != LRDirection::kLeft) {
 				lrDirection_ = LRDirection::kLeft;
@@ -86,7 +86,7 @@ void Player::Move() {
 	// 跳跃
 	if (onGround_) {
 
-		if (Input::GetInstance()->PushKey(DIK_UP)) {
+		if (Input::GetInstance()->PushKey(DIK_W)) {
 			velocity_ = Add(velocity_, {0.0f, kJumpAcceleration, 0.0f});
 		}
 	}

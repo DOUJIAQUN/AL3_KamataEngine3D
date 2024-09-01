@@ -112,12 +112,13 @@
     <ClCompile Include="CameraController.cpp" />
     <ClCompile Include="Deathparticles.cpp" />
     <ClCompile Include="Enemy.cpp" />
+    <ClCompile Include="GameOver.cpp" />
+    <ClCompile Include="GameVictory.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MapChipField.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="scene\GameScene.cpp" />
     <ClCompile Include="Skydome.cpp" />
-    <ClCompile Include="titleMoji.cpp" />
     <ClCompile Include="TitleScene.cpp" />
     <ClCompile Include="WorldTransformEx.cpp" />
   </ItemGroup>
@@ -148,6 +149,8 @@
     <ClInclude Include="CameraController.h" />
     <ClInclude Include="Deathparticles.h" />
     <ClInclude Include="Enemy.h" />
+    <ClInclude Include="GameOver.h" />
+    <ClInclude Include="GameVictory.h" />
     <ClInclude Include="input\Input.h" />
     <ClInclude Include="MapChipField.h" />
     <ClInclude Include="math\3DFunction.h" />
@@ -158,7 +161,6 @@
     <ClInclude Include="Player.h" />
     <ClInclude Include="scene\GameScene.h" />
     <ClInclude Include="Skydome.h" />
-    <ClInclude Include="titleMoji.h" />
     <ClInclude Include="TitleScene.h" />
   </ItemGroup>
   <ItemGroup>

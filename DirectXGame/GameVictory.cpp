@@ -1,25 +1,18 @@
-#include "TitleScene.h"
+#include "GameVictory.h"
 #include "TextureManager.h"
 
-TitleScene::TitleScene() {}
+GameVictory::GameVictory() {}
 
-TitleScene::~TitleScene() {
-	//delete _modelSkydemo;
-	delete gametitleSprite_;
+GameVictory::~GameVictory() {
+	delete _modelSkydemo;
+	delete gameVictorySprite_;
 }
 
-void TitleScene::Initialize() {
+void GameVictory::Initialize() {
 
 	dxCommon_ = DirectXCommon::GetInstance();
 
 	viewProjection_.Initialize();
-
-	gametitletextureHandle_ = TextureManager::Load("title.png");
-
-	gametitleSprite_ = Sprite::Create(gametitletextureHandle_, {0, 0});
-
-
-	
 
 	//====================天球==========================
 	_modelSkydemo = Model::CreateFromOBJ("skydome", true); // 天球モデル
@@ -28,17 +21,21 @@ void TitleScene::Initialize() {
 
 	_skydome->Initialize(_modelSkydemo, &viewProjection_);
 
-	
+
+	gameVictorytextureHandle_ = TextureManager::Load("victory.png");
+
+	gameVictorySprite_ = Sprite::Create(gameVictorytextureHandle_, {0, 0});
+
 }
 
-void TitleScene::Update() {
+void GameVictory::Update() {
 	_skydome->Update();
-	if (Input::GetInstance()->PushKey(DIK_SPACE)) {
+	if (Input::GetInstance()->PushKey(DIK_B)) {
 		finished_ = true;
 	}
 }
 
-void TitleScene::Draw() {
+void GameVictory::Draw() {
 	// コマンドリストの取得	获取命令列表
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
 	Model::PreDraw(commandList);
@@ -46,9 +43,8 @@ void TitleScene::Draw() {
 	Model::PostDraw();
 
 	Sprite::PreDraw(commandList);
-	gametitleSprite_->Draw();
+	gameVictorySprite_->Draw();
 	Sprite::PostDraw();
 
-	
 	
 }

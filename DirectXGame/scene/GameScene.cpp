@@ -20,6 +20,7 @@ GameScene::~GameScene() {
 
 	delete _modelEnemyOBJ;
 
+	delete _modelGoal;
 	// 解放debug相机
 	delete debugCamera_;
 
@@ -69,12 +70,16 @@ void GameScene::Initialize() {
 
 	_modelSkydemo = Model::CreateFromOBJ("skydome", true); // 天球モデル
 
-	_modelPlayerOBJ = Model::CreateFromOBJ("playerOBJ", true); // player model
+	_modelPlayerOBJ = Model::CreateFromOBJ("player", true); // player model
 
-	_modelEnemyOBJ = Model::CreateFromOBJ("enemyOBJ", true); // enemy model
+	_modelEnemyOBJ = Model::CreateFromOBJ("Enemy", true); // enemy model
 
 	_modelParticleOBJ = Model::CreateFromOBJ("particle", true); // enemy model
 
+	_modelGoal = Model::CreateFromOBJ("Goal", true);
+
+
+	goalWorldTransform_.Initialize();
 	//===================viewProjection_初始化===============================
 
 	viewProjection_.Initialize();
@@ -89,6 +94,8 @@ void GameScene::Initialize() {
 
 	_mapChipField = new MapChipField();
 	_mapChipField->LoadMapChipCsv("Resources/block.csv");
+	goalPosition_ = _mapChipField->GetMapChipPositionByIndex(98, 18); // 设置通关点的位置
+	isClear_ = false;
 
 	//======================Player=========================
 
@@ -113,11 +120,12 @@ void GameScene::Initialize() {
 	Vector3 enemyPosition[enemyCount];
 	for (uint32_t i = 0; i < enemyCount; ++i) {
 		Enemy* newEnemy = new Enemy();
-		enemyPosition[i] = _mapChipField->GetMapChipPositionByIndex(10, 18 - i * 2);
+		enemyPosition[i] = _mapChipField->GetMapChipPositionByIndex(15+i * 10, 18 - i * 2);
 		newEnemy->Initialize(_modelEnemyOBJ, &viewProjection_, enemyPosition[i]);
 		_enemies.push_back(newEnemy);
 	}
 
+	
 	//======================生成粒子====================================
 
 	deathParticles_ = new DeathParticles();
@@ -172,6 +180,11 @@ void GameScene::Update() {
 #endif // _DEBUG
 
 	//=======================phase更新================
+	// Model
+	Matrix4x4 scaleMatrix = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 195, 2, 0, 1};
+	goalWorldTransform_.matWorld_ = scaleMatrix;
+	
+	goalWorldTransform_.TransferMatrix();
 	ChangePhase();
 
 	//=============================================
@@ -203,6 +216,7 @@ void GameScene::Draw() {
 
 	// スプライト描画後処理	Sprite绘制后处理
 	Sprite::PostDraw();
+	
 	// 深度バッファクリア		深度缓冲区清除
 	dxCommon_->ClearDepthBuffer();
 #pragma endregion
@@ -253,6 +267,7 @@ void GameScene::Draw() {
 
 	//===================================================================
 
+	_modelGoal->Draw(goalWorldTransform_, viewProjection_);
 	// 3Dオブジェクト描画後処理
 	Model::PostDraw();
 
@@ -272,6 +287,30 @@ void GameScene::Draw() {
 #pragma endregion
 }
 
+AABB GameScene::GetAABB() {
+	Vector3 worldPos = goalPosition_;
+	AABB aabb;
+	aabb.min = {worldPos.x - kWidth / 2.0f, worldPos.y - kHeight / 2.0f, worldPos.z - kWidth / 2.0f};
+	aabb.max = {worldPos.x + kWidth / 2.0f, worldPos.y + kHeight / 2.0f, worldPos.z + kWidth / 2.0f};
+	return aabb;
+}
+
+
+void GameScene::CheckGameClear() {
+#pragma region player and enemy
+	// プレイヤーと敌人の衝突判定
+	AABB aabb1, aabb2;
+
+	aabb1 = _player->GetAABB();
+
+	
+		aabb2 = GetAABB();
+		if (IsCollision(aabb1, aabb2)) {
+		    isClear_ = true;
+		}
+	
+#pragma endregion
+}
 void GameScene::CheckAllCollisions() {
 #pragma region player and enemy
 	// プレイヤーと敌人の衝突判定
@@ -345,12 +384,16 @@ void GameScene::ChangePhase() {
 		//=======================碰撞更新================
 		// all collisions check
 		CheckAllCollisions();
-
+		CheckGameClear();
 		//=======================死亡判定================
 		if (isDead_) {
 			const Vector3& deathPosition = _player->GetWorldTransform().translation_;
 			deathParticles_->Initialize(_modelParticleOBJ, &viewProjection_, deathPosition);
 			phase_ = Phase::kDeath;
+		}
+
+		if (isClear_) {
+			victory_ = true;
 		}
 		break;
 

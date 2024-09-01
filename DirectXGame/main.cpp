@@ -1,8 +1,9 @@
-
 #include "Audio.h"
 #include "AxisIndicator.h"
 #include "DirectXCommon.h"
 #include "GameScene.h"
+#include "GameOver.h"
+#include "GameVictory.h"
 #include "ImGuiManager.h"
 #include "PrimitiveDrawer.h"
 #include "TextureManager.h"
@@ -13,11 +14,15 @@ enum class Scene {
 	kUnkonwn = 0,
 	kTitle,
 	kGame,
+	kGameOver,
+	kGameVictory,
 };
 Scene scene = Scene::kUnkonwn;
 
 TitleScene* titleScene = nullptr;
 GameScene* gameScene = nullptr;
+GameOver* gameOver = nullptr;
+GameVictory* gameVictor = nullptr;
 
 void ChangeScene() {
 	switch (scene) {
@@ -32,14 +37,42 @@ void ChangeScene() {
 		break;
 	case Scene::kGame:
 		if (gameScene->IsFinished()) {
-			scene = Scene::kTitle;
+			scene = Scene::kGameOver;
 			delete gameScene;
 			gameScene = nullptr;
+			gameOver = new GameOver();
+			gameOver->Initialize();
+		} 
+		else if (gameScene->IsVictory()) {
+			scene = Scene::kGameVictory;
+			delete gameScene;
+			gameScene = nullptr;
+			gameVictor = new GameVictory;
+			gameVictor->Initialize();
+		}
+		break;
+	case Scene::kGameOver:
+		if (gameOver->IsFinished()) {
+			scene = Scene::kTitle;
+			delete gameOver;
+			gameOver = nullptr;
+			titleScene = new TitleScene();
+			titleScene->Initialize();
+		}
+		break;
+	case Scene::kGameVictory:
+		if (gameVictor->IsFinished()) {
+			scene = Scene::kTitle;
+			delete gameVictor;
+			gameVictor = nullptr;
 			titleScene = new TitleScene();
 			titleScene->Initialize();
 		}
 		break;
 	}
+	
+	
+   
 }
 void UpdateScene() {
 	switch (scene) {
@@ -49,7 +82,14 @@ void UpdateScene() {
 	case Scene::kGame:
 		gameScene->Update();
 		break;
+	case Scene::kGameOver:
+		gameOver->Update();
+		break;
+	case Scene::kGameVictory:
+		gameVictor->Update();
+		break;
 	}
+
 }
 void DrawScene() {
 	switch (scene) {
@@ -58,6 +98,12 @@ void DrawScene() {
 		break;
 	case Scene::kGame:
 		gameScene->Draw();
+		break;
+	case Scene::kGameOver:
+		gameOver->Draw();
+		break;
+	case Scene::kGameVictory:
+		gameVictor->Draw();
 		break;
 	}
 }
@@ -73,7 +119,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	// ゲームウィンドウの作成		GameWindow制作
 	win = WinApp::GetInstance();
-	win->CreateGameWindow(L"LE2C_18_トウ_カグン_AL3"); // User Name
+	win->CreateGameWindow(L"Veil_Runner"); // User Name
 
 	// DirectX初期化処理
 	dxCommon = DirectXCommon::GetInstance();
